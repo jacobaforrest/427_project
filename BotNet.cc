@@ -27,10 +27,16 @@
                
 */
 
-#define SINK // UDP Sink server
+// Resources:
+// third.cc
+// fifth.cc
+// https://infosecwriteups.com/ddos-simulation-in-ns-3-c-12f031a7b38c
 
 
-//#define ECHO // UDP Echo server
+//#define SINK // UDP Sink server
+
+
+#define ECHO // UDP Echo server
 
 
 #define FIFTH // TCP w Tracing (adapted from fifth.cc tutorial)
@@ -185,8 +191,9 @@ main (int argc, char *argv[])
 
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("1ms"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("1Mbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("100ms"));
+  pointToPoint.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("10p"));
 
   NetDeviceContainer devices_n1_n0;
   devices_n1_n0 = pointToPoint.Install (Nodes.Get(1), Nodes.Get(0));
@@ -281,7 +288,6 @@ main (int argc, char *argv[])
   stack.Install (Nodes);
   stack.Install (bot_wifiStaNodes);
 
-
   Ipv4AddressHelper address;
 
   // Assign IP to nodes
@@ -311,7 +317,7 @@ main (int argc, char *argv[])
 
       // Bot onoff Application Behaviour
       OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
-      onoff.SetConstantRate(DataRate("10Gbps"));
+      onoff.SetConstantRate(DataRate("1Mbps"));
       onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
       onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
       onoff.SetAttribute("PacketSize", UintegerValue(1024));
@@ -332,7 +338,25 @@ main (int argc, char *argv[])
     ApplicationContainer serverApp = echoServer.Install(Nodes.Get(2));
     serverApp.Start(Seconds(1.0));
     serverApp.Stop(Seconds(SIM_TIME));
-    
+
+
+    // Bot onoff Application Behaviour
+    OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
+    onoff.SetConstantRate(DataRate("1Mbps"));
+    onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
+    onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    onoff.SetAttribute("PacketSize", UintegerValue(1024));
+
+    // Install application in all bots
+    ApplicationContainer onOffApp[NUM_BOTS];
+    for (int i = 0; i < NUM_BOTS; i++)
+    {
+        onOffApp[i] = onoff.Install(bot_wifiStaNodes.Get(i));
+        onOffApp[i].Start(Seconds(2.0));
+        onOffApp[i].Stop(Seconds(SIM_TIME));
+    }
+
+    /*
     // Bot echoClient Application Behaviour
     UdpEchoClientHelper echoClient(interfaces_n1_n2.GetAddress(1), PORT);
     echoClient.SetAttribute ("MaxPackets", UintegerValue (NUM_PACKETS));
@@ -346,6 +370,7 @@ main (int argc, char *argv[])
         clientApp[i].Start(Seconds(2.0));
         clientApp[i].Stop(Seconds(SIM_TIME));	
     }
+    */
   #endif
 
   #ifdef FIFTH
@@ -361,7 +386,7 @@ main (int argc, char *argv[])
     ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeCallback (&CwndChange));
 
     Ptr<MyApp> app = CreateObject<MyApp> ();
-    app->Setup (ns3TcpSocket, sinkAddress, 1040, 100000, DataRate ("5Mbps"));
+    app->Setup (ns3TcpSocket, sinkAddress, 1040, 1000, DataRate ("1Mbps"));
     Nodes.Get (0)->AddApplication (app);
     app->SetStartTime (Seconds (1));
     app->SetStopTime (Seconds (SIM_TIME));
