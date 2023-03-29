@@ -6,6 +6,7 @@
 #include "ns3/yans-wifi-helper.h"
 #include "ns3/ssid.h"
 #include "ns3/mobility-module.h"
+#include "ns3/trace-helper.h"
 
 /* Default Network Topology
 
@@ -32,29 +33,19 @@
 // fifth.cc
 // https://infosecwriteups.com/ddos-simulation-in-ns-3-c-12f031a7b38c
 
+/* 
+  ./waf --run BotNet.cc
+  gnuplot plotcongestion.p
+*/
 
 //#define SINK // UDP Sink server
-
-
 #define ECHO // UDP Echo server
+#define ERROR_MODEL
 
 
-#define FIFTH // TCP w Tracing (adapted from fifth.cc tutorial)
-/* 
-  ./waf --run BotNet.cc > cwnd.dat 2>&1
-  $ gnuplot
-  gnuplot> set terminal png size 640,480
-  gnuplot> set output "cwnd.png"
-  gnuplot> plot "cwnd.dat" using 1:2 title 'Congestion Window' with linespoints
-  gnuplot> exit
-
-*/
-//#define REAL_USER // UDP source from n0
-
-
-#define NUM_BOTS 15
-#define SIM_TIME 20
-#define NUM_PACKETS 100000
+#define NUM_BOTS 32
+#define SIM_TIME 30
+#define NUM_PACKETS 10000
 #define PORT 25565
 #define PORT2 25566
 
@@ -63,120 +54,122 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE ("BotNet");
 
 
-#ifdef FIFTH
-  class MyApp : public Application 
-  {
-  public:
 
-    MyApp ();
-    virtual ~MyApp();
+class MyApp : public Application 
+{
+public:
 
-    void Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
+  MyApp ();
+  virtual ~MyApp();
 
-  private:
-    virtual void StartApplication (void);
-    virtual void StopApplication (void);
+  void Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate);
 
-    void ScheduleTx (void);
-    void SendPacket (void);
+private:
+  virtual void StartApplication (void);
+  virtual void StopApplication (void);
 
-    Ptr<Socket>     m_socket;
-    Address         m_peer;
-    uint32_t        m_packetSize;
-    uint32_t        m_nPackets;
-    DataRate        m_dataRate;
-    EventId         m_sendEvent;
-    bool            m_running;
-    uint32_t        m_packetsSent;
-  };
+  void ScheduleTx (void);
+  void SendPacket (void);
 
-  MyApp::MyApp ()
-    : m_socket (0), 
-      m_peer (), 
-      m_packetSize (0), 
-      m_nPackets (0), 
-      m_dataRate (0), 
-      m_sendEvent (), 
-      m_running (false), 
-      m_packetsSent (0)
-  {
-  }
+  Ptr<Socket>     m_socket;
+  Address         m_peer;
+  uint32_t        m_packetSize;
+  uint32_t        m_nPackets;
+  DataRate        m_dataRate;
+  EventId         m_sendEvent;
+  bool            m_running;
+  uint32_t        m_packetsSent;
+};
 
-  MyApp::~MyApp()
-  {
-    m_socket = 0;
-  }
+MyApp::MyApp ()
+  : m_socket (0), 
+    m_peer (), 
+    m_packetSize (0), 
+    m_nPackets (0), 
+    m_dataRate (0), 
+    m_sendEvent (), 
+    m_running (false), 
+    m_packetsSent (0)
+{
+}
 
-  void
-  MyApp::Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate)
-  {
-    m_socket = socket;
-    m_peer = address;
-    m_packetSize = packetSize;
-    m_nPackets = nPackets;
-    m_dataRate = dataRate;
-  }
+MyApp::~MyApp()
+{
+  m_socket = 0;
+}
 
-  void
-  MyApp::StartApplication (void)
-  {
-    m_running = true;
-    m_packetsSent = 0;
-    m_socket->Bind ();
-    m_socket->Connect (m_peer);
-    SendPacket ();
-  }
+void
+MyApp::Setup (Ptr<Socket> socket, Address address, uint32_t packetSize, uint32_t nPackets, DataRate dataRate)
+{
+  m_socket = socket;
+  m_peer = address;
+  m_packetSize = packetSize;
+  m_nPackets = nPackets;
+  m_dataRate = dataRate;
+}
 
-  void 
-  MyApp::StopApplication (void)
-  {
-    m_running = false;
+void
+MyApp::StartApplication (void)
+{
+  m_running = true;
+  m_packetsSent = 0;
+  m_socket->Bind ();
+  m_socket->Connect (m_peer);
+  SendPacket ();
+}
 
-    if (m_sendEvent.IsRunning ())
-      {
-        Simulator::Cancel (m_sendEvent);
-      }
+void 
+MyApp::StopApplication (void)
+{
+  m_running = false;
 
-    if (m_socket)
-      {
-        m_socket->Close ();
-      }
-  }
+  if (m_sendEvent.IsRunning ())
+    {
+      Simulator::Cancel (m_sendEvent);
+    }
 
-  void 
-  MyApp::SendPacket (void)
-  {
-    Ptr<Packet> packet = Create<Packet> (m_packetSize);
-    m_socket->Send (packet);
+  if (m_socket)
+    {
+      m_socket->Close ();
+    }
+}
 
-    if (++m_packetsSent < m_nPackets)
-      {
-        ScheduleTx ();
-      }
-  }
+void 
+MyApp::SendPacket (void)
+{
+  Ptr<Packet> packet = Create<Packet> (m_packetSize);
+  m_socket->Send (packet);
 
-  void 
-  MyApp::ScheduleTx (void)
-  {
-    if (m_running)
-      {
-        Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
-        m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
-      }
-  }
+  if (++m_packetsSent < m_nPackets)
+    {
+      ScheduleTx ();
+    }
+}
 
-  static void
-  CwndChange (uint32_t oldCwnd, uint32_t newCwnd)
-  {
-    NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
-  }
+void 
+MyApp::ScheduleTx (void)
+{
+  if (m_running)
+    {
+      Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
+      m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
+    }
+}
 
-  /*static void
-  RxDrop (Ptr<const Packet> p)
-  {
-    NS_LOG_UNCOND ("RxDrop at " << Simulator::Now ().GetSeconds ());
-  }*/
-#endif
+static void
+CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
+{
+  //NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
+  *stream->GetStream() << Simulator::Now().GetSeconds() << "\t" << newCwnd << std::endl;
+}
+/*
+static void
+RxDrop (Ptr<const Packet> p)
+{
+  NS_LOG_UNCOND ("RxDrop at " << Simulator::Now ().GetSeconds ());
+}
+*/
+
 
 int
 main (int argc, char *argv[])
@@ -186,14 +179,17 @@ main (int argc, char *argv[])
   
   Time::SetResolution (Time::NS);
 
+  AsciiTraceHelper asciiTraceHelper;
+  Ptr<OutputStreamWrapper> stream1 = asciiTraceHelper.CreateFileStream ("tcp_cwnd.dat");
+
   NodeContainer Nodes;
   Nodes.Create (4);
 
 
   PointToPointHelper pointToPoint;
   pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("1Mbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("100ms"));
-  pointToPoint.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("10p"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("10ms"));
+  //pointToPoint.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("100p"));
 
   NetDeviceContainer devices_n1_n0;
   devices_n1_n0 = pointToPoint.Install (Nodes.Get(1), Nodes.Get(0));
@@ -208,6 +204,11 @@ main (int argc, char *argv[])
               
   NetDeviceContainer devices_n1_n2;
   devices_n1_n2 = pointToPoint.Install (Nodes.Get(1), Nodes.Get(2));
+  #ifdef ERROR_MODEL
+    Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
+    em->SetAttribute ("ErrorRate", DoubleValue (0.00001));
+    devices_n1_n2.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
+  #endif
 
 //   n0
 //    |
@@ -309,106 +310,58 @@ main (int argc, char *argv[])
   address.Assign (bot_staDevices);
 
   #ifdef SINK
-      // UDPSink
-      PacketSinkHelper UDPsink("ns3::UdpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), PORT)));
-      ApplicationContainer UDPSinkApp = UDPsink.Install(Nodes.Get(2));
-      UDPSinkApp.Start(Seconds(1.0));
-      UDPSinkApp.Stop(Seconds(SIM_TIME));
-
-      // Bot onoff Application Behaviour
-      OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
-      onoff.SetConstantRate(DataRate("1Mbps"));
-      onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
-      onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-      onoff.SetAttribute("PacketSize", UintegerValue(1024));
-
-      // Install application in all bots
-      ApplicationContainer onOffApp[NUM_BOTS];
-      for (int i = 0; i < NUM_BOTS; i++)
-      {
-          onOffApp[i] = onoff.Install(bot_wifiStaNodes.Get(i));
-          onOffApp[i].Start(Seconds(2.0));
-          onOffApp[i].Stop(Seconds(SIM_TIME));
-      }
+    // UDPSink
+    PacketSinkHelper UDPsink("ns3::UdpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), PORT)));
+    ApplicationContainer UDPSinkApp = UDPsink.Install(Nodes.Get(2));
+    UDPSinkApp.Start(Seconds(0.0));
+    UDPSinkApp.Stop(Seconds(SIM_TIME));
   #endif
 
   #ifdef ECHO
    	// UDPecho
     UdpEchoServerHelper echoServer (PORT);
     ApplicationContainer serverApp = echoServer.Install(Nodes.Get(2));
-    serverApp.Start(Seconds(1.0));
+    serverApp.Start(Seconds(0.0));
     serverApp.Stop(Seconds(SIM_TIME));
+  #endif
 
-
-    // Bot onoff Application Behaviour
-    OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
-    onoff.SetConstantRate(DataRate("1Mbps"));
-    onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
-    onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    onoff.SetAttribute("PacketSize", UintegerValue(1024));
+  // Bot onoff Application Behaviour
+  OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
+  onoff.SetConstantRate(DataRate("100Mbps"));
+  onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
+  onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+  onoff.SetAttribute("PacketSize", UintegerValue(1024));
 
     // Install application in all bots
-    ApplicationContainer onOffApp[NUM_BOTS];
-    for (int i = 0; i < NUM_BOTS; i++)
-    {
-        onOffApp[i] = onoff.Install(bot_wifiStaNodes.Get(i));
-        onOffApp[i].Start(Seconds(2.0));
-        onOffApp[i].Stop(Seconds(SIM_TIME));
-    }
+  ApplicationContainer onOffApp[NUM_BOTS];
+  for (int i = 0; i < NUM_BOTS; i++)
+  {
+      onOffApp[i] = onoff.Install(bot_wifiStaNodes.Get(i));
+      onOffApp[i].Start(Seconds(1.0));
+      onOffApp[i].Stop(Seconds(SIM_TIME));
+  }
 
-    /*
-    // Bot echoClient Application Behaviour
-    UdpEchoClientHelper echoClient(interfaces_n1_n2.GetAddress(1), PORT);
-    echoClient.SetAttribute ("MaxPackets", UintegerValue (NUM_PACKETS));
-    echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.0001)));
-    echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
-    //Install application in all bots
-    ApplicationContainer clientApp[NUM_BOTS];
-    for (int i = 0; i < NUM_BOTS; i++)
-    {	
-        clientApp[i] = echoClient.Install(bot_wifiStaNodes.Get(i));	
-        clientApp[i].Start(Seconds(2.0));
-        clientApp[i].Stop(Seconds(SIM_TIME));	
-    }
-    */
-  #endif
+  // TCP connection between node n0 and node n2
+  Address sinkAddress (InetSocketAddress(interfaces_n1_n2.GetAddress (1), PORT2));
+  PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory",
+    InetSocketAddress (Ipv4Address::GetAny (), PORT2));
+  ApplicationContainer sinkApps = packetSinkHelper.Install (Nodes.Get (2));
+  sinkApps.Start (Seconds (0));
+  sinkApps.Stop (Seconds (SIM_TIME));
 
-  #ifdef FIFTH
-    // TCP connection between node n0 and node n2
-    Address sinkAddress (InetSocketAddress(interfaces_n1_n2.GetAddress (1), PORT2));
-    PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory",
-      InetSocketAddress (Ipv4Address::GetAny (), PORT2));
-    ApplicationContainer sinkApps = packetSinkHelper.Install (Nodes.Get (2));
-    sinkApps.Start (Seconds (0));
-    sinkApps.Stop (Seconds (SIM_TIME));
+  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Nodes.Get (0), TcpSocketFactory::GetTypeId ());
+  ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream1));
 
-    Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Nodes.Get (0), TcpSocketFactory::GetTypeId ());
-    ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeCallback (&CwndChange));
+  Ptr<MyApp> app = CreateObject<MyApp> ();
+  app->Setup (ns3TcpSocket, sinkAddress, 1040, NUM_PACKETS, DataRate ("1Mbps"));
+  Nodes.Get (0)->AddApplication (app);
+  app->SetStartTime (Seconds (1));
+  app->SetStopTime (Seconds (SIM_TIME));
 
-    Ptr<MyApp> app = CreateObject<MyApp> ();
-    app->Setup (ns3TcpSocket, sinkAddress, 1040, 1000, DataRate ("1Mbps"));
-    Nodes.Get (0)->AddApplication (app);
-    app->SetStartTime (Seconds (1));
-    app->SetStopTime (Seconds (SIM_TIME));
+  //devices_n1_n2.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
 
-    //devices_n1_n2.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
-  #endif
 
-  #ifdef REAL_USER
-  		
-    // Read user echoClient Application Behaviour	
-    UdpEchoClientHelper echoClient_real(interfaces_n1_n2.GetAddress(1), PORT);	
-    echoClient_real.SetAttribute ("MaxPackets", UintegerValue (NUM_PACKETS));	
-    echoClient_real.SetAttribute ("Interval", TimeValue (Seconds (2.0)));	
-    echoClient_real.SetAttribute ("PacketSize", UintegerValue (1024));	
 
-    //Install application in node n0	
-    ApplicationContainer clientApp_real = echoClient_real.Install(Nodes.Get(0));	
-    clientApp_real.Start(Seconds(2.0));	
-    clientApp_real.Stop(Seconds(SIM_TIME));	
-
-  #endif
-  
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
   //AsciiTraceHelper ascii;
