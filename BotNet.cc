@@ -57,7 +57,7 @@
 
 #define NUM_BOTS_n 32
 #define NUM_BOTS_m 32
-#define SIM_TIME 30
+#define SIM_TIME 180
 #define NUM_PACKETS 10000
 #define PORT 25565
 #define PORT2 25566
@@ -408,7 +408,7 @@ main (int argc, char *argv[])
 
   // Bot onoff Application Behaviour
   OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
-  onoff.SetConstantRate(DataRate("100Mbps"));
+  onoff.SetConstantRate(DataRate("1Mbps"));
   onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
   onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
   onoff.SetAttribute("PacketSize", UintegerValue(1024));
