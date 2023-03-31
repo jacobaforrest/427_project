@@ -55,10 +55,10 @@
 #define ERROR_MODEL
 
 
-#define NUM_BOTS_n 32
-#define NUM_BOTS_m 32
-#define SIM_TIME 180
-#define NUM_PACKETS 10000
+#define NUM_BOTS_n 0
+#define NUM_BOTS_m 0
+#define SIM_TIME 120
+#define NUM_PACKETS 25000
 #define PORT 25565
 #define PORT2 25566
 
@@ -175,6 +175,14 @@ CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
   //NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
   *stream->GetStream() << Simulator::Now().GetSeconds() << "\t" << newCwnd << std::endl;
 }
+
+static void
+RttChange (Ptr<OutputStreamWrapper> stream, Time oldRtt, Time newRtt)
+{
+  //NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << rtt);
+  *stream->GetStream() << Simulator::Now().GetSeconds() << "\t" << newRtt << std::endl;
+}
+
 /*
 static void
 RxDrop (Ptr<const Packet> p)
@@ -194,14 +202,15 @@ main (int argc, char *argv[])
 
   AsciiTraceHelper asciiTraceHelper;
   Ptr<OutputStreamWrapper> stream1 = asciiTraceHelper.CreateFileStream ("tcp_cwnd.dat");
+  Ptr<OutputStreamWrapper> stream2 = asciiTraceHelper.CreateFileStream ("tcp_rtt.dat");
 
   NodeContainer Nodes;
   Nodes.Create (5);
 
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("1Mbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("10ms"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
   //pointToPoint.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("100p"));
 
   NetDeviceContainer devices_n1_n0;
@@ -408,7 +417,7 @@ main (int argc, char *argv[])
 
   // Bot onoff Application Behaviour
   OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
-  onoff.SetConstantRate(DataRate("1Mbps"));
+  onoff.SetConstantRate(DataRate("5Mbps"));
   onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
   onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
   onoff.SetAttribute("PacketSize", UintegerValue(1024));
@@ -426,7 +435,7 @@ main (int argc, char *argv[])
   for (int i = 0; i < NUM_BOTS_m; i++)
   {
       onOffApp_m[i] = onoff.Install(botm_wifiStaNodes.Get(i));
-      onOffApp_m[i].Start(Seconds(1.0));
+      onOffApp_m[i].Start(Seconds(0.0));
       onOffApp_m[i].Stop(Seconds(SIM_TIME));
   }
 
@@ -435,16 +444,17 @@ main (int argc, char *argv[])
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory",
     InetSocketAddress (Ipv4Address::GetAny (), PORT2));
   ApplicationContainer sinkApps = packetSinkHelper.Install (Nodes.Get (2));
-  sinkApps.Start (Seconds (0));
+  sinkApps.Start (Seconds (0.0));
   sinkApps.Stop (Seconds (SIM_TIME));
 
   Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Nodes.Get (0), TcpSocketFactory::GetTypeId ());
   ns3TcpSocket->TraceConnectWithoutContext ("CongestionWindow", MakeBoundCallback (&CwndChange, stream1));
+  ns3TcpSocket->TraceConnectWithoutContext ("RTT", MakeBoundCallback (&RttChange, stream2));
 
   Ptr<MyApp> app = CreateObject<MyApp> ();
-  app->Setup (ns3TcpSocket, sinkAddress, 1040, NUM_PACKETS, DataRate ("1Mbps"));
+  app->Setup (ns3TcpSocket, sinkAddress, 1040, NUM_PACKETS, DataRate ("5Mbps"));
   Nodes.Get (0)->AddApplication (app);
-  app->SetStartTime (Seconds (1));
+  app->SetStartTime (Seconds (1.0));
   app->SetStopTime (Seconds (SIM_TIME));
 
   //devices_n1_n2.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
