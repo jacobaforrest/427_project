@@ -7,6 +7,8 @@
 #include "ns3/ssid.h"
 #include "ns3/mobility-module.h"
 #include "ns3/trace-helper.h"
+#include "ns3/flow-monitor.h"
+#include "ns3/flow-monitor-helper.h"
 
 /* Default Network Topology
 
@@ -50,17 +52,23 @@
   gnuplot plotcongestion.p
 */
 
-//#define SINK // UDP Sink server
-#define ECHO // UDP Echo server
+#define SINK // UDP Sink server
+
+//#define ECHO // UDP Echo server
 #define ERROR_MODEL
 
 
-#define NUM_BOTS_n 0
-#define NUM_BOTS_m 0
+#define NUM_BOTS_n 5
+#define NUM_BOTS_m 5
 #define SIM_TIME 120
-#define NUM_PACKETS 25000
+#define NUM_PACKETS 100000
+#define DATA_RATE "10Mbps"
+#define TCP_RATE "5Mbps"
+#define DDOS_RATE "20Mbps"
+#define CHANNEL_DELAY "5ms"
 #define PORT 25565
 #define PORT2 25566
+
 
 using namespace ns3;
 
@@ -209,9 +217,9 @@ main (int argc, char *argv[])
 
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
-  //pointToPoint.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("100p"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue (DATA_RATE));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue (CHANNEL_DELAY));
+  pointToPoint.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("100p"));
 
   NetDeviceContainer devices_n1_n0;
   devices_n1_n0 = pointToPoint.Install (Nodes.Get(1), Nodes.Get(0));
@@ -417,7 +425,7 @@ main (int argc, char *argv[])
 
   // Bot onoff Application Behaviour
   OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
-  onoff.SetConstantRate(DataRate("5Mbps"));
+  onoff.SetConstantRate(DataRate(DDOS_RATE));
   onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=30]"));
   onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
   onoff.SetAttribute("PacketSize", UintegerValue(1024));
@@ -427,7 +435,7 @@ main (int argc, char *argv[])
   for (int i = 0; i < NUM_BOTS_n; i++)
   {
       onOffApp_n[i] = onoff.Install(botn_wifiStaNodes.Get(i));
-      onOffApp_n[i].Start(Seconds(1.0));
+      onOffApp_n[i].Start(Seconds(0.0));
       onOffApp_n[i].Stop(Seconds(SIM_TIME));
   }
 
@@ -452,9 +460,9 @@ main (int argc, char *argv[])
   ns3TcpSocket->TraceConnectWithoutContext ("RTT", MakeBoundCallback (&RttChange, stream2));
 
   Ptr<MyApp> app = CreateObject<MyApp> ();
-  app->Setup (ns3TcpSocket, sinkAddress, 1040, NUM_PACKETS, DataRate ("5Mbps"));
+  app->Setup (ns3TcpSocket, sinkAddress, 1040, NUM_PACKETS, DataRate (TCP_RATE));
   Nodes.Get (0)->AddApplication (app);
-  app->SetStartTime (Seconds (1.0));
+  app->SetStartTime (Seconds (0.0));
   app->SetStopTime (Seconds (SIM_TIME));
 
   //devices_n1_n2.Get (1)->TraceConnectWithoutContext ("PhyRxDrop", MakeCallback (&RxDrop));
@@ -469,8 +477,17 @@ main (int argc, char *argv[])
   phy_n.EnablePcap ("BotNetn", apDevices_n3.Get (0));
   phy_m.EnablePcap ("BotNetm", apDevices_n4.Get (0));
 
+  // Flow monitor
+  Ptr<FlowMonitor> flowMonitor;
+  FlowMonitorHelper flowHelper;
+  flowMonitor = flowHelper.InstallAll();
+
+
   Simulator::Stop (Seconds (SIM_TIME));
   Simulator::Run ();
   Simulator::Destroy ();
+
+  flowMonitor->SerializeToXmlFile("flowBotNet.xml", true, true);
+
   return 0;
 }
