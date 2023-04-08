@@ -1,0 +1,42 @@
+flowBotNet_0
+
+	TX bitrate: 5407.28 kbit/s
+	RX bitrate: 5374.76 kbit/s
+	Mean Delay: 4.12 ms
+	Packet Loss Ratio: 0.49 %
+	
+flowBotNet_4
+
+	TX bitrate: 4745.33 kbit/s
+	RX bitrate: 4714.12 kbit/s
+	Mean Delay: 4.17 ms
+	Packet Loss Ratio: 0.54 %
+
+
+Stats2/flowBotNet_8
+
+	TX bitrate: 5273.58 kbit/s
+	RX bitrate: 5242.14 kbit/s
+	Mean Delay: 4.30 ms
+	Packet Loss Ratio: 0.48 %
+
+Stats2/flowBotNet_10
+
+	TX bitrate: 273.72 kbit/s
+	RX bitrate: 260.58 kbit/s
+	Mean Delay: 34.76 ms
+	Packet Loss Ratio: 4.65 %
+
+Stats2/flowBotNet_12
+
+	TX bitrate: 59.38 kbit/s
+	RX bitrate: 53.89 kbit/s
+	Mean Delay: 77.32 ms
+	Packet Loss Ratio: 8.87 %
+
+Stats2/flowBotNet_16
+
+	TX bitrate: 45.28 kbit/s
+	RX bitrate: 42.28 kbit/s
+	Mean Delay: 69.50 ms
+	Packet Loss Ratio: 6.77 %
