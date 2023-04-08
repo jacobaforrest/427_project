@@ -17,7 +17,7 @@ xlabel('Number of Attack Bots');
 %xticks([0, 4, 8, 10, 12, 16]);
 ylabel('Delay (ms)');
 title('TCP Packet Mean Delay vs. Number of Attack Bots');
-
+fontsize(gca,24,"pixels")
 set(gcf, 'Position', [100 100 800 600]);
 set(gcf, 'Visible', 'off');
 print(folder + '/' + filename + '.png', '-dpng', '-r600');

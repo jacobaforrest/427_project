@@ -16,8 +16,8 @@ function plot_tcp_congestion(path, num_bots)
     xlabel('Time (s)');
     ylabel('Congestion Window (cwnd)');
     title('TCP Congestion Window Size vs. Time', '( Attack Bots = ' + num_bots + ' )');
-
-    set(gcf, 'Position', [100 100 1920 1080]);
+    fontsize(gca,40,"pixels")
+    set(gcf, 'Position', [100 100 1600 1200]);
     set(gcf, 'Visible', 'off');
     print(folder + '/' + filename + '.png', '-dpng', '-r600');
 
