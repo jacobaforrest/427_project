@@ -60,7 +60,7 @@
 
 
 #define NUM_BOT_NETWORKS 5
-#define SIM_TIME 20
+#define SIM_TIME 60
 #define NUM_PACKETS 5000000
 #define DATA_RATE "100Mbps"
 #define TCP_RATE "100Mbps"
