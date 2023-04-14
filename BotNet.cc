@@ -12,52 +12,39 @@
 
 /* Default Network Topology
 
-//             WiFi                                                 Point-to-Point             
-//                                            AP                                  n0
-//  *     *                      *                                                 | (0-0)
-//  |     |                      |                                                 | ↓
-//  |     |                      |                                                 | 
-//  |     |                      |                                                 | 10.1.1.0
-//  |     |                      |                                                 | 
-//  |     |                      |                                                 | ↑
-//  |     |                      |           10.1.3.0                              | (1-0)         10.1.2.0
-// b0_2,   b0_1,                    b0_0 ---------------------------------------- n1 --------------------------------------- n2
-//       10.2.1.0                    ← (3-1)    (3-0) →           ← (1-2)       /  |     (1-1) →                     ← (2-0)
-//                                                                             /   | (1-n)
-//                                                                            /    | ↓
-//                                                                           /     |
-//                                                                    .     /      | 10.1.4.0
-//                                                                        .        |
-//                                                                            .    |
-//                                                                                 | ↑
-//                                                 10.3.1.0               ← (n-1)  | (n-0)
-//                                            bn_2,      bn_1,                   bn_0
-//                                              |          |                       |
-//                                              |          |                       |
-//                                              |          |                       |
-//                                              |          |                       |
-//                                              *          *                       *
-//                                                                                 AP
-//                                             WiFi     
+//                     WiFi                                                 Point-to-Point             
+//      real users                  bots                       AP                                          n0
+//     *          *              *       *                     *                                            | (0-0)
+//     |          |              |       |                     |                                            | ↓
+//     |          |              |       |                     |                                            | 
+//     |          |              |       |                     |                                            | 10.1.1.0
+//     |          |              |       |                     |                                            | 
+//     |          |              |       |                     |                                            | ↑
+//     |          |              |       |                     |           10.1.3.x                         | (1-0)         10.1.2.0
+//   r0_0, ..., r0_7,   ...,   b0_2,   b0_1,                 b0_0 ---------------------------------------- n1 --------------------------------------- n2
+//                    10.2.1.x                        ← (3-2)  | (3-0) →                   ← (1-2)       /  |     (1-1) →                     ← (2-0)
+//                                                             | (3-1)                                  /   | (1-2+n)
+//                                                             | ↓                                     /    | ↓
+//                                           10.1.4.x          |                                      /     |
+//                                                             | (2+n+1-0)                           /      | 10.1.3.x
+//                                                            j0                                  ...       |
+//                                                                                                          |
+//                                                                                                          | ↑
+//                    10.2.1.x                                                                   ← (2+n-2)  | (2+n-0)     10.1.4.x
+//   rn_0, ..., rn_7,   ...,   bn_2,   bn_1,                                                              bn_0 -------------------- jn
+//     |          |              |       |                                                                  |  (2+n-1) →   ← (2+n+n-0)
+//     |          |              |       |                                                                  |
+//     |          |              |       |                                                                  |
+//     |          |              |       |                                                                  |
+//     *          *              *       *                                                                  *
+//      real users                  bots                                                                   AP
+//                      WiFi     
 //
 
 */
 
-// Resources:
-// third.cc
-// fifth.cc
-// https://infosecwriteups.com/ddos-simulation-in-ns-3-c-12f031a7b38c
 
-/* 
-  ./waf --run BotNet.cc
-  gnuplot plotcongestion.p
-*/
-
-#define SINK // UDP Sink server
-
-//#define ECHO // UDP Echo server
-#define ERROR_MODEL
-
+#define BACKGROUND_TRAFFIC
 
 #define NUM_BOT_NETWORKS 5
 #define SIM_TIME 60
@@ -65,6 +52,7 @@
 #define DATA_RATE "100Mbps"
 #define TCP_RATE "100Mbps"
 #define DDOS_RATE "10Mbps"
+#define BACKGROUND_RATE "10Mbps"
 #define CHANNEL_DELAY "2ms"
 #define PORT 25565
 #define PORT2 25566
@@ -224,28 +212,28 @@ main (int argc, char *argv[])
   NetDeviceContainer devices_n1_n0;
   devices_n1_n0 = pointToPoint.Install (Nodes.Get(1), Nodes.Get(0));
       
-//   n0
-//    |
-//    |
-//   n1
-//
-//   point-to-point
+  //   n0
+  //    |
+  //    |
+  //   n1
+  //
+  //   point-to-point
 
               
   NetDeviceContainer devices_n1_n2;
   devices_n1_n2 = pointToPoint.Install (Nodes.Get(1), Nodes.Get(2));
-  #ifdef ERROR_MODEL
-    Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
-    em->SetAttribute ("ErrorRate", DoubleValue (0.00001));
-    devices_n1_n2.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
-  #endif
 
-//   n0
-//    |
-//    |
-//   n1 ---------------- n2
-//
-//   point-to-point
+  Ptr<RateErrorModel> em = CreateObject<RateErrorModel> ();
+  em->SetAttribute ("ErrorRate", DoubleValue (0.00001));
+  devices_n1_n2.Get (1)->SetAttribute ("ReceiveErrorModel", PointerValue (em));
+
+
+  //   n0
+  //    |
+  //    |
+  //   n1 ---------------- n2
+  //
+  //   point-to-point
 
 
 
@@ -257,18 +245,37 @@ main (int argc, char *argv[])
     devices_Bot_AP[i] = pointToPoint.Install (Nodes.Get(1), Bot_AP_Nodes.Get(i));
   }
 
-//                         n0
-//                          |
-//                          |
-//   b0_0 ---------------- n1 ---------------- n2
-//                       /  |
-//                      /   |
-//                     /    |
-//                    /     |
-//                 ...    bn_0
-//
-//                 point-to-point
+  //                         n0
+  //                          |
+  //                          |
+  //   b0_0 ---------------- n1 ---------------- n2
+  //                       /  |
+  //                      /   |
+  //                     /    |
+  //                  ...     |
+  //                        bn_0
+  //
+  //                 point-to-point
 
+  NodeContainer J_Nodes;
+  J_Nodes.Create(NUM_BOT_NETWORKS);
+  NetDeviceContainer devices_J_Nodes[NUM_BOT_NETWORKS];
+  for (int i = 0; i < NUM_BOT_NETWORKS; i++)
+  {
+    devices_J_Nodes[i] = pointToPoint.Install (Bot_AP_Nodes.Get(i), J_Nodes.Get(i));
+  }
+
+  //                         n0
+  //                          |
+  //                          |
+  //   b0_0 ---------------- n1 ---------------- n2
+  //     |                 /  |
+  //     |                /   |
+  //     |               /    |
+  //    j0            ...     |
+  //                        bn_0 --------------- jn
+  //
+  //                 point-to-point
 
 
 
@@ -285,20 +292,48 @@ main (int argc, char *argv[])
     bot_wifiStaNodes[i].Create (2);
   }
 
-//      wifi                           point-to-point
-//   *       *           *                   n0   
-//   |       |           |                    |                   
-//   |       |           |                    |
-// b0_2,   b0_1,       b0_0 ---------------- n1 ---------------- n2
-//       wifi                              /  |
-//                                        /   |
-//                                       /    |
-//                                     ...    |
-//           bn_2,  bn_1,                   bn_0
-//             |      |                       |
-//             |      |                       |
-//             *      *                       *
-//               WiFi     
+  //     WiFi                           point-to-point
+  //   *      *           *                   n0   
+  //   |      |           |                    |                   
+  //   |      |           |                    |
+  // b0_2,  b0_1,       b0_0 ---------------- n1 ---------------- n2
+  //                      |                 /  |
+  //                      |                /   |
+  //                      |               /    |
+  //                     j0              /     |
+  //                                   ...     |
+  // bn_2,  bn_1,                            bn_0 --------------- jn
+  //   |      |                                |
+  //   |      |                                |
+  //   *      *                                *
+  //     WiFi     
+
+
+  NodeContainer real_wifiStaNodes[NUM_BOT_NETWORKS];
+  for (int i = 0; i < NUM_BOT_NETWORKS; i++)
+  {
+    real_wifiStaNodes[i].Create (8);
+  }
+
+  //                     WiFi                           Point-To-Point
+  //     real users                     bots             AP              
+  //    *          *                  *      *           *                   n0   
+  //    |          |                  |      |           |                    |                   
+  //    |          |                  |      |           |                    |
+  //  r0_0, ..., r0_7,    ...,      b0_2,  b0_1,       b0_0 ---------------- n1 ---------------- n2
+  //                                                     |                 /  |
+  //                                                     |                /   |
+  //                                                     |               /    |
+  //                                                    j0              /     |
+  //                                                                  ...     |
+  //  rn_0, ..., rn_7,    ...,      bn_2,  bn_1,                            bn_0 --------------- jn
+  //    |          |                  |      |                                |
+  //    |          |                  |      |                                |
+  //    *          *                  *      *                                *
+  //     real users                     bots                                  AP
+  //                     WiFi
+
+
 
 
   YansWifiChannelHelper channels[NUM_BOT_NETWORKS];
@@ -307,6 +342,7 @@ main (int argc, char *argv[])
   WifiMacHelper mac[NUM_BOT_NETWORKS];
   Ssid ssid[NUM_BOT_NETWORKS];
   NetDeviceContainer bot_staDevices[NUM_BOT_NETWORKS];
+  NetDeviceContainer real_staDevices[NUM_BOT_NETWORKS];
   NetDeviceContainer bot_apDevices[NUM_BOT_NETWORKS];
 
   MobilityHelper mobility;
@@ -322,10 +358,12 @@ main (int argc, char *argv[])
               "Ssid", SsidValue (ssid[i]),
               "ActiveProbing", BooleanValue (false));
     bot_staDevices[i] = wifi[i].Install (phy[i], mac[i], bot_wifiStaNodes[i]);
+    real_staDevices[i] = wifi[i].Install (phy[i], mac[i], real_wifiStaNodes[i]);
     mac[i].SetType("ns3::ApWifiMac",
                "Ssid", SsidValue (ssid[i]));
     bot_apDevices[i] = wifi[i].Install (phy[i], mac[i], wifi_AP_Nodes[i]);
     mobility.Install (bot_wifiStaNodes[i]);
+    mobility.Install (real_wifiStaNodes[i]);
     mobility.Install (wifi_AP_Nodes[i]);
 
   }
@@ -334,10 +372,12 @@ main (int argc, char *argv[])
   InternetStackHelper stack;
   stack.Install (Nodes);
   stack.Install (Bot_AP_Nodes);
+  stack.Install (J_Nodes);
 
   for (int i = 0; i < NUM_BOT_NETWORKS; i++)
   {
     stack.Install (bot_wifiStaNodes[i]);
+    stack.Install (real_wifiStaNodes[i]);
   }
 
   Ipv4AddressHelper address;
@@ -359,30 +399,95 @@ main (int argc, char *argv[])
     interfaces_n1_b[i] = address.Assign (devices_Bot_AP[i]);
   }
 
-  // Assign IP to bots
+  // Assign IP to J nodes
+  address.SetBase ("10.1.4.0", "255.255.255.0");
+  Ipv4InterfaceContainer interfaces_b_j[NUM_BOT_NETWORKS];
+  for (int i = 0; i < NUM_BOT_NETWORKS; i++)
+  {
+    interfaces_b_j[i] = address.Assign (devices_J_Nodes[i]);
+  }
+
+  // Assign IP to WiFi nodes
   address.SetBase ("10.2.1.0", "255.255.255.0");
   for (int i = 0; i < NUM_BOT_NETWORKS; i++)
   {
     address.Assign(bot_apDevices[i]);
     address.Assign(bot_staDevices[i]);
+    address.Assign(real_staDevices[i]);
   }
 
 
-  #ifdef SINK
-    // UDPSink
-    PacketSinkHelper UDPsink("ns3::UdpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), PORT)));
-    ApplicationContainer UDPSinkApp = UDPsink.Install(Nodes.Get(2));
+
+  // UDPSink
+  PacketSinkHelper UDPsink("ns3::UdpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), PORT)));
+  ApplicationContainer UDPSinkApp = UDPsink.Install(Nodes.Get(2));
+  UDPSinkApp.Start(Seconds(0.0));
+  UDPSinkApp.Stop(Seconds(SIM_TIME));
+
+  for (int i = 0; i < NUM_BOT_NETWORKS; i++)
+  {
+    ApplicationContainer UDPSinkApp = UDPsink.Install(J_Nodes.Get(i));
     UDPSinkApp.Start(Seconds(0.0));
     UDPSinkApp.Stop(Seconds(SIM_TIME));
+  }
+
+  #ifdef BACKGROUND_TRAFFIC
+    // Real user onoff Application Behaviour
+    OnOffHelper background_onoff("ns3::UdpSocketFactory", Address());
+    background_onoff.SetConstantRate(DataRate(BACKGROUND_RATE));
+    background_onoff.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=5]"));
+    background_onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=5]"));
+    background_onoff.SetAttribute("PacketSize", UintegerValue(1024));
+
+    // Install application in real wifi users
+    ApplicationContainer background_onOffApp[NUM_BOT_NETWORKS * 8];
+    int t = 0;
+    for (int i = 0; i < NUM_BOT_NETWORKS * 8; i = i + 8)
+    {
+      background_onoff.SetAttribute("Remote", AddressValue(InetSocketAddress(interfaces_b_j[t].GetAddress(1), PORT)));
+    
+      background_onOffApp[i] = background_onoff.Install(real_wifiStaNodes[t].Get(0));
+      background_onOffApp[i+1] = background_onoff.Install(real_wifiStaNodes[t].Get(1));
+      background_onOffApp[i+2] = background_onoff.Install(real_wifiStaNodes[t].Get(2));
+      background_onOffApp[i+3] = background_onoff.Install(real_wifiStaNodes[t].Get(3));
+      background_onOffApp[i+4] = background_onoff.Install(real_wifiStaNodes[t].Get(4));
+      background_onOffApp[i+5] = background_onoff.Install(real_wifiStaNodes[t].Get(5));
+      background_onOffApp[i+6] = background_onoff.Install(real_wifiStaNodes[t].Get(6));
+      background_onOffApp[i+7] = background_onoff.Install(real_wifiStaNodes[t].Get(7));
+      
+
+
+      background_onOffApp[i].Start(Seconds(0.0));   
+      background_onOffApp[i].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+1].Start(Seconds(0.0));   
+      background_onOffApp[i+1].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+2].Start(Seconds(0.0));   
+      background_onOffApp[i+2].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+3].Start(Seconds(0.0));   
+      background_onOffApp[i+3].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+4].Start(Seconds(0.0));   
+      background_onOffApp[i+4].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+5].Start(Seconds(0.0));   
+      background_onOffApp[i+5].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+6].Start(Seconds(0.0));   
+      background_onOffApp[i+6].Stop(Seconds(SIM_TIME));
+
+      background_onOffApp[i+7].Start(Seconds(0.0));   
+      background_onOffApp[i+7].Stop(Seconds(SIM_TIME));
+
+
+      t++;
+
+
+    }
   #endif
 
-  #ifdef ECHO
-   	// UDPecho
-    UdpEchoServerHelper echoServer (PORT);
-    ApplicationContainer serverApp = echoServer.Install(Nodes.Get(2));
-    serverApp.Start(Seconds(0.0));
-    serverApp.Stop(Seconds(SIM_TIME));
-  #endif
 
   // Bot onoff Application Behaviour
   OnOffHelper onoff("ns3::UdpSocketFactory", Address(InetSocketAddress(interfaces_n1_n2.GetAddress(1), PORT)));
@@ -391,7 +496,7 @@ main (int argc, char *argv[])
   onoff.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
   onoff.SetAttribute("PacketSize", UintegerValue(1024));
 
-    // Install application in all bots
+  // Install application in all bots
   ApplicationContainer onOffApp[NUM_BOT_NETWORKS * 2];
   int j = 0;
   for (int i = 0; i < NUM_BOT_NETWORKS * 2; i = i + 2)
