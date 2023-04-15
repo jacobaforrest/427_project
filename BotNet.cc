@@ -21,8 +21,8 @@
 //     |          |              |       |                     |                                            | 
 //     |          |              |       |                     |                                            | ↑
 //     |          |              |       |                     |           10.1.3.x                         | (1-0)         10.1.2.0
-//   r0_0, ..., r0_7,   ...,   b0_2,   b0_1,                 b0_0 ---------------------------------------- n1 --------------------------------------- n2
-//                    10.2.1.x                        ← (3-2)  | (3-0) →                   ← (1-2)       /  |     (1-1) →                     ← (2-0)
+//   r0_0, ..., r0_3,   ...,   b0_2,   b0_1,                 b0_0 ---------------------------------------- n1 --------------------------------------- n2
+//                    10.2.x.x                        ← (3-2)  | (3-0) →                   ← (1-2)       /  |     (1-1) →                     ← (2-0)
 //                                                             | (3-1)                                  /   | (1-2+n)
 //                                                             | ↓                                     /    | ↓
 //                                           10.1.4.x          |                                      /     |
@@ -30,8 +30,8 @@
 //                                                            j0                                  ...       |
 //                                                                                                          |
 //                                                                                                          | ↑
-//                    10.2.1.x                                                                   ← (2+n-2)  | (2+n-0)     10.1.4.x
-//   rn_0, ..., rn_7,   ...,   bn_2,   bn_1,                                                              bn_0 -------------------- jn
+//                    10.2.x.x                                                                   ← (2+n-2)  | (2+n-0)     10.1.4.x
+//   rn_0, ..., rn_3,   ...,   bn_2,   bn_1,                                                              bn_0 -------------------- jn
 //     |          |              |       |                                                                  |  (2+n-1) →   ← (2+n+n-0)
 //     |          |              |       |                                                                  |
 //     |          |              |       |                                                                  |
@@ -46,7 +46,7 @@
 
 #define BACKGROUND_TRAFFIC
 
-#define NUM_BOT_NETWORKS 5
+#define NUM_BOT_NETWORKS 120
 #define SIM_TIME 60
 #define NUM_PACKETS 5000000
 #define DATA_RATE "100Mbps"
@@ -312,7 +312,7 @@ main (int argc, char *argv[])
   NodeContainer real_wifiStaNodes[NUM_BOT_NETWORKS];
   for (int i = 0; i < NUM_BOT_NETWORKS; i++)
   {
-    real_wifiStaNodes[i].Create (8);
+    real_wifiStaNodes[i].Create (4);
   }
 
   //                     WiFi                           Point-To-Point
@@ -408,7 +408,7 @@ main (int argc, char *argv[])
   }
 
   // Assign IP to WiFi nodes
-  address.SetBase ("10.2.1.0", "255.255.255.0");
+  address.SetBase ("10.2.0.0", "255.255.0.0");
   for (int i = 0; i < NUM_BOT_NETWORKS; i++)
   {
     address.Assign(bot_apDevices[i]);
@@ -440,46 +440,29 @@ main (int argc, char *argv[])
     background_onoff.SetAttribute("PacketSize", UintegerValue(1024));
 
     // Install application in real wifi users
-    ApplicationContainer background_onOffApp[NUM_BOT_NETWORKS * 8];
+    ApplicationContainer background_onOffApp[NUM_BOT_NETWORKS * 4];
     int t = 0;
-    for (int i = 0; i < NUM_BOT_NETWORKS * 8; i = i + 8)
+    for (int i = 0; i < NUM_BOT_NETWORKS * 4; i = i + 4)
     {
       background_onoff.SetAttribute("Remote", AddressValue(InetSocketAddress(interfaces_b_j[t].GetAddress(1), PORT)));
     
       background_onOffApp[i] = background_onoff.Install(real_wifiStaNodes[t].Get(0));
       background_onOffApp[i+1] = background_onoff.Install(real_wifiStaNodes[t].Get(1));
       background_onOffApp[i+2] = background_onoff.Install(real_wifiStaNodes[t].Get(2));
-      background_onOffApp[i+3] = background_onoff.Install(real_wifiStaNodes[t].Get(3));
-      background_onOffApp[i+4] = background_onoff.Install(real_wifiStaNodes[t].Get(4));
-      background_onOffApp[i+5] = background_onoff.Install(real_wifiStaNodes[t].Get(5));
-      background_onOffApp[i+6] = background_onoff.Install(real_wifiStaNodes[t].Get(6));
-      background_onOffApp[i+7] = background_onoff.Install(real_wifiStaNodes[t].Get(7));
-      
+      background_onOffApp[i+3] = background_onoff.Install(real_wifiStaNodes[t].Get(3));      
 
 
       background_onOffApp[i].Start(Seconds(0.0));   
       background_onOffApp[i].Stop(Seconds(SIM_TIME));
 
-      background_onOffApp[i+1].Start(Seconds(0.0));   
+      background_onOffApp[i+1].Start(Seconds(2.5));   
       background_onOffApp[i+1].Stop(Seconds(SIM_TIME));
 
-      background_onOffApp[i+2].Start(Seconds(0.0));   
+      background_onOffApp[i+2].Start(Seconds(5.0));   
       background_onOffApp[i+2].Stop(Seconds(SIM_TIME));
 
-      background_onOffApp[i+3].Start(Seconds(0.0));   
+      background_onOffApp[i+3].Start(Seconds(7.5));   
       background_onOffApp[i+3].Stop(Seconds(SIM_TIME));
-
-      background_onOffApp[i+4].Start(Seconds(0.0));   
-      background_onOffApp[i+4].Stop(Seconds(SIM_TIME));
-
-      background_onOffApp[i+5].Start(Seconds(0.0));   
-      background_onOffApp[i+5].Stop(Seconds(SIM_TIME));
-
-      background_onOffApp[i+6].Start(Seconds(0.0));   
-      background_onOffApp[i+6].Stop(Seconds(SIM_TIME));
-
-      background_onOffApp[i+7].Start(Seconds(0.0));   
-      background_onOffApp[i+7].Stop(Seconds(SIM_TIME));
 
 
       t++;
@@ -541,12 +524,14 @@ main (int argc, char *argv[])
 
   //AsciiTraceHelper ascii;
   //pointToPoint.EnableAsciiAll (ascii.CreateFileStream ("BotNet.tr"));
-  pointToPoint.EnablePcapAll("BotNet");
   
+  /*
+  pointToPoint.EnablePcapAll("BotNet");
   for (int i = 0; i < NUM_BOT_NETWORKS; i++)
   {
     phy[i].EnablePcap ("BotNet", bot_apDevices[i].Get (0));
   }
+  */
 
 
   // Flow monitor
