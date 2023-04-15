@@ -1,15 +1,42 @@
-flowBotNet_0
+Number of Attack Bots: 0
 
+	TX bitrate: 5407.28 kbit/s
+	RX bitrate: 5374.76 kbit/s
+	Mean Delay: 4.12 ms
+	Packet Loss Ratio: 0.49 %
 
-	
-	
-flowBotNet_10
-
-
-
-flowBotNet_20
+Number of Attack Bots: 20
 
 	TX bitrate: 4893.71 kbit/s
 	RX bitrate: 4864.25 kbit/s
 	Mean Delay: 4.89 ms
 	Packet Loss Ratio: 0.49 %
+
+Number of Attack Bots: 40
+
+	TX bitrate: 4511.90 kbit/s
+	RX bitrate: 4484.12 kbit/s
+	Mean Delay: 4.87 ms
+	Packet Loss Ratio: 0.50 %
+
+Number of Attack Bots: 80
+
+	TX bitrate: 1230.11 kbit/s
+	RX bitrate: 1215.23 kbit/s
+	Mean Delay: 19.68 ms
+	Packet Loss Ratio: 1.08 %
+
+Number of Attack Bots: 160
+
+	TX bitrate: 669.46 kbit/s
+	RX bitrate: 657.31 kbit/s
+	Mean Delay: 28.62 ms
+	Packet Loss Ratio: 1.68 %
+
+Number of Attack Bots: 240
+
+	TX bitrate: 455.70 kbit/s
+	RX bitrate: 446.19 kbit/s
+	Mean Delay: 38.28 ms
+	Packet Loss Ratio: 1.98 %
+
