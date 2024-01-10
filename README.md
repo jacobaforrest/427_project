@@ -14,7 +14,7 @@ Understanding the impact that IoT botnets can have on network performance is fun
 
 ## Topology
 
-![image](https://github.com/jacobaforrest/427_project/assets/91097464/1b8af5ab-9a56-4280-a465-c778af38a8b7)
+![output-onlinepngtools](https://github.com/jacobaforrest/427_project/assets/91097464/2861808b-64e1-49f7-bc73-904b46b9974f)
 
 
 ## Future Work
