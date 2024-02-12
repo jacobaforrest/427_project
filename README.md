@@ -103,34 +103,34 @@ For the real Wi-Fi user nodes, background traffic was simulated using an ns-3 on
 
 The resulting measurements from the simulations are plotted in Figures 13 through 22. The results demonstrate that compared to scenario A, the number of bots required to effectively deny bandwidth to the legitimate TCP connection was much higher. This is likely because the bots must compete for bandwidth with the legitimate users within their Wi-Fi networks.
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/mean_delay.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/mean_delay.png)  
 *Figure 13: Scenario B – TCP Mean Delay Results*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/packet_loss_ratio.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/packet_loss_ratio.png)  
 *Figure 14: Scenario B – TCP Packet Loss Ratio Results*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/RX_bitrate.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/RX_bitrate.png)  
 *Figure 15: Scenario B – TCP RX Bitrate Results*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/TX_bitrate.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/TX_bitrate.png)  
 *Figure 16: Scenario B – TCP TX Bitrate Results*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_0.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_0.png)  
 *Figure 17: Scenario B – TCP Congestion Window Results – 0 Bots*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_20.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_20.png)  
 *Figure 18: Scenario B – TCP Congestion Window Results – 20 Bots*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_40.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_40.png)  
 *Figure 19: Scenario B – TCP Congestion Window Results – 40 Bots*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_80.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_80.png)  
 *Figure 20: Scenario B – TCP Congestion Window Results – 80 Bots*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_160.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_160.png)  
 *Figure 21: Scenario B – TCP Congestion Window Results – 160 Bots*
 
-![image](https://github.com/jacobaforrest/427_project/tree/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_240.png)  
+![image](https://github.com/jacobaforrest/427_project/blob/main/Results/BackgroundTraffic/Final%20Plots/tcp_cwnd_240.png)  
 *Figure 22: Scenario B – TCP Congestion Window Results – 240 Bot*
 
 ---
